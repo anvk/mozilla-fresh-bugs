@@ -1,0 +1,26 @@
+{
+  "name": "MozBugs",
+  "version": "0.1.0",
+  "description": "TBD.",
+  "contributors": [
+    {
+      "name": "Alexey Novak",
+      "email": "alexey.novak.mail@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:anvk/MozBugs.git"
+  },
+  "keywords": [
+    "BugZilla",
+    "bugs",
+    "mentored",
+    "FireFox"
+  ],
+  "dependencies": {
+  },
+  "engine": "node >= 0.10.x",
+  "main": "main",
+  "license": "MIT"
+}
