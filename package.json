@@ -19,6 +19,7 @@
     "FireFox"
   ],
   "dependencies": {
+    "lodash": "~2.4.1"
   },
   "engine": "node >= 0.10.x",
   "main": "main",
