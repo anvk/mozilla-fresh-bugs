@@ -1,27 +1,42 @@
 {
-  "name": "MozBugs",
-  "version": "0.1.5",
-  "description": "TBD.",
+  "name": "mozilla-fresh-bugs",
+  "version": "0.1.0",
+  "author": "anvk",
+  "main": "mozilla-fresh-bugs.js",
+  "description": "Find good fresh bugs for newbies to Mozilla projects",
   "contributors": [
     {
       "name": "Alexey Novak",
       "email": "alexey.novak.mail@gmail.com"
     }
   ],
+  "scripts": {
+    "test": "node node_modules/mocha/bin/mocha --reporter spec test/*"
+  },
+  "directories": {
+    "test": "test"
+  },
   "repository": {
     "type": "git",
-    "url": "git@github.com:anvk/MozBugs.git"
+    "url": "git@github.com:anvk/mozilla-fresh-bugs.git"
   },
   "keywords": [
-    "BugZilla",
     "bugs",
+    "Mozilla",
     "mentored",
-    "FireFox"
+    "query"
   ],
   "dependencies": {
-    "lodash": "~2.4.1"
+  },
+  "devDependencies": {
+    "mocha": "2.2.x",
+    "chai": "2.1.x"
   },
   "engine": "node >= 0.10.x",
-  "main": "main",
+  "homepage": "https://github.com/anvk/mozilla-fresh-bugs",
+  "bugs": {
+    "url": "https://github.com/anvk/mozilla-fresh-bugs/issues"
+  },
+  "private": false,
   "license": "MIT"
 }
