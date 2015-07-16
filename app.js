@@ -9,7 +9,7 @@ var fs = require('fs'),
 var debug = true,
     stubDataFilePath = './test/testData.json';
 
-var path = mozillaFreshBugs._generateURL({
+var options = {
   base: '/rest/bug',
   product: '%20Firefox',
   args: [
@@ -30,7 +30,7 @@ var path = mozillaFreshBugs._generateURL({
     'last_change_time',
     'comments'
   ]
-});
+};
 
 // starting point
 if (debug) {
@@ -39,10 +39,9 @@ if (debug) {
       return console.log(err);
     }
 
-    mozillaFreshBugs.processBugs(JSON.parse(data));
+    mozillaFreshBugs._processMozillaBugData(null, JSON.parse(data));
   });
 }
 else {
-  mozillaFreshBugs.serveFresh(path);
-  //mozillaFreshBugs.makeRequest(path, getUnassignedBugs);
+  mozillaFreshBugs.serveFresh(options);
 }

@@ -4,7 +4,7 @@
 
 var chai = require('chai'),
     expect = chai.expect,
-    mozillaFreshBugs = require('../lib/mozilla-fresh-bugs.js');
+    mozillaFreshBugs = require('../dist/mozilla-fresh-bugs.js');
 
 describe('mozillaFreshBugs tests', function() {
 

@@ -1,30 +1,52 @@
 'use strict';
 
-/* global require */
-
 import _ from 'lodash';
 import request from 'request';
 
-var debug = true,
-    stubDataFilePath = './stubData.json';
-
 export default class MozillaFreshBugs {
   constructor() {
-    this._bugs = [];
-    this._filteredBugs = [];
+    this.serveFresh = this.serveFresh.bind(this);
+
+    this._makeRequest = this._makeRequest.bind(this);
+    this._processMozillaBugData = this._processMozillaBugData.bind(this);
+    this._getBugDetails = this._getBugDetails.bind(this);
   }
 
   serveFresh(options = {}) {
-    let _getUnassignedBugs = this._getUnassignedBugs;
-
-    this.makeRequest(this._generateURL(options), ({bugs =[]}) => {
-      _getUnassignedBugs(bugs);
-    });
+    this._makeRequest(this._generateURL(options), this._processMozillaBugData);
   }
 
-  makeRequest(urlPath, callback = ()=>{}) {
+  _processMozillaBugData(error, {bugs = []} = {}) {
+    if (error) {
+      return console.error(error);
+    }
+
+    let _getBugDetails = this._getBugDetails,
+        _printResult = this._printResult,
+        result = [];
+
+    for (let bug of bugs) {
+      // if bug assigned to someone already, then we do no care
+      if (bug.assigned_to_detail.id !== 1) {
+        continue;
+      }
+
+      _getBugDetails(bug, (comments = [], history = []) => {
+        bug.comments = comments;
+        bug.history = history;
+
+        result.push(bug);
+
+        if (result.length === bugs.length) {
+          //_printResult(result);
+        }
+      });
+    }
+  }
+
+  _makeRequest(urlPath, callback = ()=>{}) {
     let options = {
-      baseUrl: 'bugzilla.mozilla.org',
+      baseUrl: 'https://bugzilla.mozilla.org',
       uri: urlPath,
       method: 'GET',
       port: 443,
@@ -32,49 +54,56 @@ export default class MozillaFreshBugs {
       gzip: true
     };
 
-    request(options, (error, response, body) => {
+    request(options, (error, response, body = {}) => {
       if (error) {
-        callback(error);
-        return;
+        return callback(error);
+      }
+
+      if (body.error) {
+        return callback(body.message);
       }
 
       callback(null, body);
     });
   }
 
-  getBugDetails(bug) {
-    let addBug = this.addBug,
-        comments,
-        history;
+  _getBugDetails(bug = {}, callback = ()=>{}) {
+    let comments, history;
 
     let finished = _.after(2, () => {
-      addBug(bug, comments, history);
+      callback(comments, history);
     });
 
-    this.makeRequest('/rest/bug/' + bug.id + '/comment', data => {
+    this._makeRequest('/rest/bug/' + bug.id + '/comment', (error, data) => {
+      if (!error) {
+        console.error(error);
+        return finished();
+      }
+
+      if (!data) {
+        return finished();
+      }
+
       comments = data.bugs[bug.id].comments,
       finished();
     });
 
-    this.makeRequest('/rest/bug/' + bug.id + '/history', data => {
-      history = data.bugs[0].history;
+    this._makeRequest('/rest/bug/' + bug.id + '/history', (error, data = {}) => {
+      console.log('-------------->');
+      console.log('/rest/bug/' + bug.id + '/history');
+      console.log(data);
+
+      if (!error) {
+        console.error(error);
+        return finished();
+      }
+
+      let { bugs:[{ history:history }] = [] } = data;
+
+      console.log('=====');
+      console.log(history);
       finished();
     });
-  }
-
-  addBug(bug, comments, history) {
-    bug.comments = comments;
-    bug.history = history;
-
-    this._filteredBugs.push(bug);
-
-    if (bugs.length === this._filteredBugs.length) {
-      this.processBugs(filteredBugs);
-    }
-  }
-
-  processBugs(bugs) {
-    this._printResult(bugs);
   }
 
   _generateURL({base, product, args=[], bug_status=[], include_fields=[]} = {}) {
@@ -122,18 +151,5 @@ export default class MozillaFreshBugs {
       ].join(separator));
       console.log();
     });
-  }
-
-  _getUnassignedBugs({bugs = []} = {}) {
-    this._bugs = bugs;
-
-    for (let bug of bugs) {
-      // if bug assigned to someone already, then we do no care
-      if (bug.assigned_to_detail.id !== 1) {
-        continue;
-      }
-
-      this.getBugDetails(bug);
-    }
   }
 };
