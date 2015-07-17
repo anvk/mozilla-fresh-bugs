@@ -10,7 +10,6 @@ var debug = true,
     stubDataFilePath = './test/testData.json';
 
 var options = {
-  base: '/rest/bug',
   product: '%20Firefox',
   args: [
     { name: 'f1', value: 'bug_mentor' },
@@ -27,21 +26,28 @@ var options = {
     'id',
     'assigned_to',
     'summary',
-    'last_change_time',
-    'comments'
+    'last_change_time'
   ]
+};
+
+var callback = function(error, data) {
+  if (error) {
+    return console.error(error);
+  }
+
+  mozillaFreshBugs.log();
 };
 
 // starting point
 if (debug) {
-  fs.readFile(stubDataFilePath, 'utf8', function(err,data) {
-    if (err) {
-      return console.log(err);
+  fs.readFile(stubDataFilePath, 'utf8', function(error, data) {
+    if (error) {
+      return console.log(error);
     }
 
-    mozillaFreshBugs._processMozillaBugData(null, JSON.parse(data));
+    mozillaFreshBugs._processMozillaBugData(JSON.parse(data).bugs, callback);
   });
 }
 else {
-  mozillaFreshBugs.serveFresh(options);
+  mozillaFreshBugs.serveFresh(options, callback);
 }

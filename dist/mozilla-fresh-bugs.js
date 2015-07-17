@@ -18,37 +18,97 @@ var _request = require('request');
 
 var _request2 = _interopRequireDefault(_request);
 
+/**
+ * Class to retreive fresh bugs from Bugzilla for new contributors
+ */
+
 var MozillaFreshBugs = (function () {
   function MozillaFreshBugs() {
     _classCallCheck(this, MozillaFreshBugs);
 
     this.serveFresh = this.serveFresh.bind(this);
+    this.log = this.log.bind(this);
 
     this._makeRequest = this._makeRequest.bind(this);
     this._getBugDetails = this._getBugDetails.bind(this);
+    this._processMozillaBugData = this._processMozillaBugData.bind(this);
+
+    this._urlBase = '/rest/bug';
+    this._bugs = [];
   }
 
   _createClass(MozillaFreshBugs, [{
     key: 'serveFresh',
+
+    /**
+     * Function to pull bugs from BugZilla based on options. Process and print out
+     * result back to client.
+     * @param  {Object} options required for URL generation
+     * @param  {Function} callback Function to be executed when all bugs
+     * are processed
+     */
     value: function serveFresh() {
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+      var callback = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
 
-      this._makeRequest(this._generateURL(options), this._processMozillaBugData.bind(this));
+      this._bugs = [];
+      var _processMozillaBugData = this._processMozillaBugData;
+
+      this._makeRequest(this._generateURL(options), function (error) {
+        var data = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        if (error) {
+          return callback(error);
+        }
+
+        _processMozillaBugData(data.bugs, callback);
+      });
+    }
+  }, {
+    key: 'log',
+
+    /**
+     * Function to print out bugs
+     */
+    value: function log() {
+      var separator = '   ';
+      var bugs = this._bugs || [];
+
+      console.log('Hi there!');
+      console.log('Ready to contribute?');
+      console.log('I found ' + bugs.length + ' bugs for ya.');
+      console.log();
+
+      bugs = (0, _lodash2['default'])(bugs).chain().sortBy('last_change_time').reverse().value();
+
+      bugs.forEach(function (_ref) {
+        var summary = _ref.summary;
+        var last_change_time = _ref.last_change_time;
+        var _ref$comments = _ref.comments;
+        var comments = _ref$comments === undefined ? [] : _ref$comments;
+        var _ref$history = _ref.history;
+        var history = _ref$history === undefined ? [] : _ref$history;
+
+        console.log([summary, last_change_time, 'comments: ' + comments.length, 'history: ' + history.length].join(separator));
+        console.log();
+      });
     }
   }, {
     key: '_processMozillaBugData',
-    value: function _processMozillaBugData(error) {
-      var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-      var _ref$bugs = _ref.bugs;
-      var bugs = _ref$bugs === undefined ? [] : _ref$bugs;
+    /**
+     * Function to add comments and history to every bug and print out result
+     * @param  {Array}  bugs Array of bugs
+     * @param  {Function} callback Function to be executed when all bugs
+     * are processed
+     */
+    value: function _processMozillaBugData() {
+      var _this = this;
 
-      if (error) {
-        return console.error(error);
-      }
+      var bugs = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+      var callback = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
 
       var _getBugDetails = this._getBugDetails,
-          _printResult = this._printResult,
           iterations = bugs.length,
           result = [];
 
@@ -78,7 +138,8 @@ var MozillaFreshBugs = (function () {
             console.log('Processed %d out of %d', result.length, iterations);
 
             if (result.length === iterations) {
-              _printResult(result);
+              _this._bugs = result;
+              callback(null, result);
             }
           });
         };
@@ -105,6 +166,12 @@ var MozillaFreshBugs = (function () {
     }
   }, {
     key: '_makeRequest',
+
+    /**
+     * Function to make a request to get Mozilla bugs from Bugzilla
+     * @param  {string}   urlPath  URL path to query Bugzilla
+     * @param  {Function} callback Function callback executed to parse data
+     */
     value: function _makeRequest(urlPath) {
       var callback = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
 
@@ -133,6 +200,13 @@ var MozillaFreshBugs = (function () {
     }
   }, {
     key: '_getBugDetails',
+
+    /**
+     * Function to retreive extra data for a separate bug (comments, history,...)
+     * @param  {Object}   bug      Object containing bug data
+     * @param  {Function} callback Function executed once history
+     * and comments are returned
+     */
     value: function _getBugDetails() {
       var bug = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
       var callback = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
@@ -184,6 +258,15 @@ var MozillaFreshBugs = (function () {
     }
   }, {
     key: '_generateURL',
+
+    /**
+     * Function to create URL based on options
+     * @param  {string} options.product        Product name
+     * @param  {Array}  options.args           Extra query arguments
+     * @param  {Array}  options.bug_status     Array of bug statuses
+     * @param  {Array}  options.include_fields Arrays of bug properties to return
+     * @return {string}                        URL to retreive bugs
+     */
     value: function _generateURL() {
       var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -196,7 +279,7 @@ var MozillaFreshBugs = (function () {
       var _ref2$include_fields = _ref2.include_fields;
       var include_fields = _ref2$include_fields === undefined ? [] : _ref2$include_fields;
 
-      var url = base + '?';
+      var url = this._urlBase + '?';
 
       var _iteratorNormalCompletion2 = true;
       var _didIteratorError2 = false;
@@ -281,30 +364,13 @@ var MozillaFreshBugs = (function () {
       return url;
     }
   }, {
-    key: '_printResult',
-    value: function _printResult() {
-      var bugs = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+    key: 'bugs',
 
-      var separator = '   ';
-
-      console.log('Hi there!');
-      console.log('Ready to contribute?');
-      console.log('I found ' + bugs.length + ' bugs for ya.');
-      console.log();
-
-      bugs = (0, _lodash2['default'])(bugs).chain().sortBy('last_change_time').reverse().value();
-
-      bugs.forEach(function (_ref3) {
-        var summary = _ref3.summary;
-        var last_change_time = _ref3.last_change_time;
-        var _ref3$comments = _ref3.comments;
-        var comments = _ref3$comments === undefined ? [] : _ref3$comments;
-        var _ref3$history = _ref3.history;
-        var history = _ref3$history === undefined ? [] : _ref3$history;
-
-        console.log([summary, last_change_time, 'comments: ' + comments.length, 'history: ' + history.length].join(separator));
-        console.log();
-      });
+    /**
+     * @return {Array} Array of bugs
+     */
+    get: function get() {
+      return this._bugs;
     }
   }]);
 
