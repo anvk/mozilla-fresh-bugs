@@ -8,12 +8,12 @@ export default class MozillaFreshBugs {
     this.serveFresh = this.serveFresh.bind(this);
 
     this._makeRequest = this._makeRequest.bind(this);
-    this._processMozillaBugData = this._processMozillaBugData.bind(this);
     this._getBugDetails = this._getBugDetails.bind(this);
   }
 
   serveFresh(options = {}) {
-    this._makeRequest(this._generateURL(options), this._processMozillaBugData);
+    this._makeRequest(this._generateURL(options),
+      this._processMozillaBugData.bind(this));
   }
 
   _processMozillaBugData(error, {bugs = []} = {}) {
@@ -23,11 +23,13 @@ export default class MozillaFreshBugs {
 
     let _getBugDetails = this._getBugDetails,
         _printResult = this._printResult,
+        iterations = bugs.length,
         result = [];
 
     for (let bug of bugs) {
       // if bug assigned to someone already, then we do no care
       if (bug.assigned_to_detail.id !== 1) {
+        iterations = iterations - 1;
         continue;
       }
 
@@ -37,8 +39,10 @@ export default class MozillaFreshBugs {
 
         result.push(bug);
 
-        if (result.length === bugs.length) {
-          //_printResult(result);
+        console.log('Processed %d out of %d', result.length, iterations);
+
+        if (result.length === iterations) {
+          _printResult(result);
         }
       });
     }
@@ -74,34 +78,37 @@ export default class MozillaFreshBugs {
       callback(comments, history);
     });
 
-    this._makeRequest('/rest/bug/' + bug.id + '/comment', (error, data) => {
-      if (!error) {
+    this._makeRequest('/rest/bug/' + bug.id + '/comment', (error, data = {}) => {
+      if (error) {
         console.error(error);
+        comments = [];
         return finished();
       }
 
       if (!data) {
+        comments = [];
         return finished();
       }
 
-      comments = data.bugs[bug.id].comments,
+      comments = data.bugs[bug.id].comments;
+
       finished();
     });
 
     this._makeRequest('/rest/bug/' + bug.id + '/history', (error, data = {}) => {
-      console.log('-------------->');
-      console.log('/rest/bug/' + bug.id + '/history');
-      console.log(data);
-
-      if (!error) {
+      if (error) {
         console.error(error);
+        history = [];
         return finished();
       }
 
-      let { bugs:[{ history:history }] = [] } = data;
+      if (!data) {
+        history = [];
+        return finished();
+      }
 
-      console.log('=====');
-      console.log(history);
+      history = data.bugs[0].history;
+
       finished();
     });
   }

@@ -4,8 +4,6 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -27,7 +25,6 @@ var MozillaFreshBugs = (function () {
     this.serveFresh = this.serveFresh.bind(this);
 
     this._makeRequest = this._makeRequest.bind(this);
-    this._processMozillaBugData = this._processMozillaBugData.bind(this);
     this._getBugDetails = this._getBugDetails.bind(this);
   }
 
@@ -36,7 +33,7 @@ var MozillaFreshBugs = (function () {
     value: function serveFresh() {
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-      this._makeRequest(this._generateURL(options), this._processMozillaBugData);
+      this._makeRequest(this._generateURL(options), this._processMozillaBugData.bind(this));
     }
   }, {
     key: '_processMozillaBugData',
@@ -52,6 +49,7 @@ var MozillaFreshBugs = (function () {
 
       var _getBugDetails = this._getBugDetails,
           _printResult = this._printResult,
+          iterations = bugs.length,
           result = [];
 
       var _iteratorNormalCompletion = true;
@@ -64,6 +62,7 @@ var MozillaFreshBugs = (function () {
 
           // if bug assigned to someone already, then we do no care
           if (bug.assigned_to_detail.id !== 1) {
+            iterations = iterations - 1;
             return 'continue';
           }
 
@@ -76,7 +75,11 @@ var MozillaFreshBugs = (function () {
 
             result.push(bug);
 
-            if (result.length === bugs.length) {}
+            console.log('Processed %d out of %d', result.length, iterations);
+
+            if (result.length === iterations) {
+              _printResult(result);
+            }
           });
         };
 
@@ -141,40 +144,41 @@ var MozillaFreshBugs = (function () {
         callback(comments, history);
       });
 
-      this._makeRequest('/rest/bug/' + bug.id + '/comment', function (error, data) {
-        if (!error) {
+      this._makeRequest('/rest/bug/' + bug.id + '/comment', function (error) {
+        var data = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        if (error) {
           console.error(error);
+          comments = [];
           return finished();
         }
 
         if (!data) {
+          comments = [];
           return finished();
         }
 
-        comments = data.bugs[bug.id].comments, finished();
+        comments = data.bugs[bug.id].comments;
+
+        finished();
       });
 
       this._makeRequest('/rest/bug/' + bug.id + '/history', function (error) {
         var data = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-        console.log('-------------->');
-        console.log('/rest/bug/' + bug.id + '/history');
-        console.log(data);
-
-        if (!error) {
+        if (error) {
           console.error(error);
+          history = [];
           return finished();
         }
 
-        var _data$bugs = data.bugs;
-        _data$bugs = _data$bugs === undefined ? [] : _data$bugs;
+        if (!data) {
+          history = [];
+          return finished();
+        }
 
-        var _data$bugs2 = _slicedToArray(_data$bugs, 1);
+        history = data.bugs[0].history;
 
-        var history = _data$bugs2[0].history;
-
-        console.log('=====');
-        console.log(history);
         finished();
       });
     }
@@ -310,5 +314,3 @@ var MozillaFreshBugs = (function () {
 exports['default'] = MozillaFreshBugs;
 ;
 module.exports = exports['default'];
-
-//_printResult(result);
